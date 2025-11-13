@@ -23,7 +23,9 @@ from ultralytics import YOLO
 
 @dataclass
 class PoseDetectionConfig:
-    """Simple container for the values needed to run the detector.
+    """
+    
+    Simple container for the values needed to run the detector.
 
     Attributes
     ----------
@@ -44,7 +46,8 @@ class PoseDetectionConfig:
 
 
 class PoseDetector:
-    """Thin wrapper around Ultralytics YOLO pose models.
+    """
+    Thin wrapper around Ultralytics YOLO pose models.
 
     Keeping this logic inside its own class lets the rest of the codebase import the
     detector without repeating all the boilerplate for loading the model and parsing its
@@ -56,7 +59,7 @@ class PoseDetector:
         # device to use at inference time.
         self.config = config or PoseDetectionConfig()
         try:
-            # ``YOLO(...)`` eagerly loads the weights from disk.  We wrap it in ``try`` so
+            # "YOLO(...)" eagerly loads the weights from disk.  We wrap it in "try" so
             # we can show a friendly error message when the file is missing instead of
             # letting the less readable default exception reach the user.
             self.model = YOLO(self.config.model_path)
@@ -66,7 +69,8 @@ class PoseDetector:
             ) from exc
 
     def detect(self, frame: np.ndarray) -> List[dict]:
-        """Run inference on a frame and return keypoint coordinates and confidences.
+        """
+        Run inference on a frame and return keypoint coordinates and confidences.
 
         The Ultralytics ``YOLO`` class returns a list of ``Result`` objects.  Each result
         bundles the data for every pose it sees in the frame.  We loop through the list
@@ -76,10 +80,10 @@ class PoseDetector:
         if frame is None:
             raise ValueError("Input frame cannot be None.")
 
-        # ``self.model`` behaves like a regular callable and accepts numpy arrays
-        # (OpenCV images).  ``verbose=False`` avoids spamming progress bars during the
-        # webcam loop.
-        results = self.model(
+        # "self.model" behaves like a regular callable and accepts numpy arrays (OpenCV images).  
+        # "verbose=False" avoids spamming progress bars during the webcam loop.
+        results = self.model
+        (
             frame,
             device=self.config.device,
             conf=self.config.conf_threshold,
@@ -91,11 +95,11 @@ class PoseDetector:
             if result.keypoints is None:
                 continue
 
-            # ``keypoints`` is a tensor shaped ``(poses, num_keypoints, 2)`` with ``x``
-            # and ``y`` coordinates.  ``.xy`` converts it to pixel locations relative to
-            # the input image size.
+            # "keypoints" is a tensor shaped "(poses, num_keypoints, 2)"" with "x", and "y" coordinates.  
+            # "xy" converts it to pixel locations relative to the input image size.
             keypoints_xy = result.keypoints.xy.cpu().numpy()
-            confidences = (
+            confidences = 
+            (
                 result.keypoints.conf.cpu().numpy()
                 if result.keypoints.conf is not None
                 else np.ones_like(keypoints_xy[..., 0])
@@ -104,7 +108,8 @@ class PoseDetector:
             for instance_xy, instance_conf in zip(keypoints_xy, confidences):
                 # We convert the numpy arrays to plain lists so that they are trivial to
                 # serialize or print for debugging.
-                detections.append(
+                detections.append
+                (
                     {
                         "keypoints": instance_xy.tolist(),
                         "confidences": instance_conf.tolist(),
