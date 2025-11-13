@@ -1,4 +1,15 @@
-"""Simple, well-documented helpers for drawing HUD elements with OpenCV."""
+"""
+WHAT THIS SCRIPT DOES:
+--------------------------------------------------------------------------------------
+- Provides a small, well-documented ``UIOverlay`` helper that draws a workout HUD (Heads-Up Display).
+
+- Renders a configurable status bar containing repetition counts, current joint
+  angles, and the state reported by the exercise logic ("down" vs. "up").
+
+- Offers tiny convenience helpers that make it easy to annotate frames with
+  pose landmarks whenever you need to debug detector output.
+--------------------------------------------------------------------------------------
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -88,3 +99,4 @@ class UIOverlay:
 
 
 __all__ = ["UIOverlay"]
+
