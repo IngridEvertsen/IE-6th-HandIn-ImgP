@@ -1,4 +1,4 @@
-#Requirements for the Mini Project "Fitness Helper"
+# List of Requirements for the Mini Project "Fitness Helper"
 opencv-python
 ultralytics
 numpy
