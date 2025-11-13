@@ -15,4 +15,4 @@ Exerciser should wear fitted clothing to that the model more easily and accurate
 
 
 # Demo Video
-Link: 
+Link: #will be uploaded once done and recorded
