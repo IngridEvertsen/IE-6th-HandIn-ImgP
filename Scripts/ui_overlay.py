@@ -22,7 +22,8 @@ Color = Tuple[int, int, int]
 
 @dataclass
 class UIOverlay:
-    """Utility class that handles all drawing logic for the workout HUD.
+    """
+    Utility class that handles all drawing logic for the workout HUD.
 
     The previous iteration bundled several magic numbers and hard-coded
     operations in ``draw_hud``.  This class keeps the same public API but the
@@ -99,4 +100,5 @@ class UIOverlay:
 
 
 __all__ = ["UIOverlay"]
+
 
