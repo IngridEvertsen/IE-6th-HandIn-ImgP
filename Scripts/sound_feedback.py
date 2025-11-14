@@ -47,4 +47,23 @@ def speak(text: str) -> None:
         print("[voice]", text)
 
 
-__all__ = ["set_enabled", "speak"]
+class SoundFeedback:
+    """Small helper that wraps :func:`speak` with workout-specific phrasing."""
+
+    def __init__(
+        self,
+        *,
+        enabled: bool = True,
+        positive_prompt: str = "Great job",
+    ) -> None:
+        self.positive_prompt = positive_prompt
+        self.set_enabled(enabled)
+
+    def set_enabled(self, flag: bool) -> None:
+        set_enabled(flag)
+
+    def announce_repetition(self, count: int) -> None:
+        speak(f"{self.positive_prompt}! That's {count} reps.")
+
+
+__all__ = ["set_enabled", "speak", "SoundFeedback"]
