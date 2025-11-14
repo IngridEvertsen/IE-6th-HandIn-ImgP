@@ -10,6 +10,7 @@ WHAT THIS SCRIPT DOES:
   pose landmarks whenever you need to debug detector output.
 --------------------------------------------------------------------------------------
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
