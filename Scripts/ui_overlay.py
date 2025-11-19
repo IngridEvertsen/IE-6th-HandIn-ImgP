@@ -37,7 +37,7 @@ class UIOverlay:
     text_color: Color = (255, 255, 255)
     accent_color: Color = (0, 255, 0)
     alert_color: Color = (0, 128, 255)
-    hud_height: int = 80
+    hud_height: int = 110
 
     # ------ Public helpers ------
     def draw_hud(
@@ -46,7 +46,10 @@ class UIOverlay:
         rep_count: int,
         angle: Optional[float],
         state: str,
-        rep_completed: bool = False,
+         rep_completed: bool = False,
+        *,
+        body_visible: bool = True,
+        goal: Optional[int] = None,
     ) -> None:
         """Paint the top HUD bar with repetition/angle/state information."""
 
@@ -63,6 +66,22 @@ class UIOverlay:
         # Right-align the state label by starting near the far edge.
         self._put_text(frame, f"State: {state_text}", (width - 220, 30), 0.8, color)
 
+        if goal is not None:
+            goal_text = f"Goal: {goal} reps"
+            if rep_count >= goal:
+                goal_text = "Daily goal reached!"
+            self._put_text(frame, goal_text, (width - 260, 60), 0.6, self.accent_color)
+
+        if not body_visible:
+            self._put_text
+          (
+                frame,
+                "Keep your whole body inside the frame.",
+                (20, 90),
+                0.6,
+                self.alert_color,
+            )
+
     def draw_landmarks(self, frame, landmarks: Dict[str, Tuple[float, float]]) -> None:
         """Render pose landmarks as simple points to aid debugging."""
 
@@ -70,6 +89,29 @@ class UIOverlay:
             x, y = map(int, point)
             cv2.circle(frame, (x, y), 4, self.accent_color, -1)
 
+    def draw_start_screen(self, frame) -> None:
+        """Render the onboarding instructions before reps start counting."""
+
+        overlay = frame.copy()
+        height, width = frame.shape[:2]
+        cv2.rectangle(overlay, (0, 0), (width, height), (0, 0, 0), -1)
+        cv2.addWeighted(overlay, 0.65, frame, 0.35, 0, frame)
+
+        instructions = 
+      [
+            "Hi, you seem ready for your daily workout,",
+            "should we just get started?",
+            "Make sure that your whole figure is visible within the frame,",
+            "and place your left side towards the camera with your feet hip width apart.",
+            "Once you are ready I'll start counting your reps and",
+            "let you know once you've hit the daily goal.",
+            "Press SPACE to begin.",
+        ]
+
+        y = height // 2 - 120
+        for line in instructions:
+            self._put_text(frame, line, (40, y), 0.7)
+            y += 35
     
     # ------ Private helpers ------
     def _draw_background(self, frame, width: int) -> None:
@@ -80,7 +122,8 @@ class UIOverlay:
             return "--"
         return f"{angle:.1f}°"
 
-    def _put_text(
+    def _put_text
+    (
         self,
         frame,
         text: str,
@@ -88,7 +131,8 @@ class UIOverlay:
         scale: float,
         color: Optional[Color] = None,
     ) -> None:
-        cv2.putText(
+        cv2.putText
+        (
             frame,
             text,
             origin,
@@ -101,5 +145,6 @@ class UIOverlay:
 
 
 __all__ = ["UIOverlay"]
+
 
 
