@@ -11,9 +11,11 @@ from __future__ import annotations
 import argparse
 import cv2
 from .exercise_logic import SquatCounter
-from .pose_detection import PoseDetector
+from .pose_detection import PoseDetector, body_fully_visible
 from .sound_feedback import SoundFeedback
 from .ui_overlay import UIOverlay
+
+GOAL_REPS = 20
 
 
 def parse_args() -> argparse.Namespace:
@@ -27,6 +29,21 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--no-audio", action="store_true", help="Disable spoken feedback")
     return parser.parse_args()
 
+def _wait_for_user_ready(cap: cv2.VideoCapture, overlay: UIOverlay) -> bool:
+    """Show the onboarding screen until the user presses SPACE or quits."""
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            return False
+        overlay.draw_start_screen(frame)
+        cv2.imshow(overlay.window_name, frame)
+        key = cv2.waitKey(1) & 0xFF
+        if key in (ord(" "), ord("\r"), ord("\n")):
+            return True
+        if key in (ord("q"), 27):
+            return False
+
 
 def main() -> None:
     args = parse_args()
@@ -36,8 +53,13 @@ def main() -> None:
 
     detector = PoseDetector(model_path=args.model, device=args.device)
     counter = SquatCounter(side=args.side, down_angle=args.down, up_angle=args.up)
-    sound = SoundFeedback(enabled=not args.no_audio)
+    sound = SoundFeedback(enabled=not args.no_audio, goal=GOAL_REPS)
     overlay = UIOverlay()
+
+    if not _wait_for_user_ready(cap, overlay):
+        cap.release()
+        cv2.destroyAllWindows()
+        return
 
     try:
         while True:
@@ -49,15 +71,26 @@ def main() -> None:
             annotated, landmarks = detector.detect(frame)
 
             event = None
+            body_visible = False
             if landmarks is not None:
-                event = counter.update(landmarks)
-                if event.rep_completed:
-                    sound.announce_repetition(counter.rep_count)
+                body_visible = body_fully_visible(landmarks, annotated.shape)
+                if body_visible:
+                    event = counter.update(landmarks)
+                    if event.rep_completed:
+                        sound.announce_repetition(counter.rep_count)
 
             angle = event.angle if event is not None else None
             state = event.state if event is not None else counter.state
             completed = event.rep_completed if event is not None else False
-            overlay.draw_hud(annotated, counter.rep_count, angle, state, completed)
+            overlay.draw_hud(
+                annotated,
+                counter.rep_count,
+                angle,
+                state,
+                completed,
+                body_visible=body_visible,
+                goal=GOAL_REPS,
+            )
 
             cv2.imshow(overlay.window_name, annotated)
             key = cv2.waitKey(1) & 0xFF
@@ -70,3 +103,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
