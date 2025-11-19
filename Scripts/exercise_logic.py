@@ -126,8 +126,8 @@ class SquatCounter:
             knee = self._get_landmark(landmarks, "knee")
             ankle = self._get_landmark(landmarks, "ankle")
         except KeyError:
-            # If any landmark is missing we cannot compute the angle. Return the
-            # last known state without counting a repetition.
+            # If any landmark is missing we cannot compute the angle. 
+            # Return the last known state without counting a repetition.
             angle = float("nan")
             return SquatEvent(angle=angle, state=self.state, rep_completed=False)
 
