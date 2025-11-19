@@ -46,7 +46,8 @@ class SquatCounter:
         avoids rapid flickering around threshold values.
     """
 
-    def __init__(
+    def __init__
+    (
         self,
         side: str = "left",
         down_angle: float = 70.0,
@@ -142,3 +143,4 @@ class SquatCounter:
 
 
 __all__ = ["SquatCounter", "SquatEvent"]
+
