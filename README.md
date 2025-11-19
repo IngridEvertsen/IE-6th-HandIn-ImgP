@@ -7,7 +7,7 @@ Mini Project for the course "Image Processing", from the third semester of the M
 A small computer-vision based fitness helper that provides **real-time feedback** on bodyweight squats using **MediaPipe Pose** and **OpenCV**.
 The app guides the user through a simple squat exercise, gives spoken positive feedback when reps are detected, and counts towards a target of **20 squats**.
 
-### Demo Video - Link: #will be uploaded once done and recorded
+> ### Demo Video - Link: #will be uploaded once done and recorded
 
 
 ## 1. Main idea
@@ -68,19 +68,18 @@ With the virtual environment activated and from the project folder:
 ```bash
 python3 squat_trainer.py
 ```
-### What should happen:
-A window opens with the title Squat Form Coach.
-You hear a short voice intro explaining what to do.
-The start screen appears with written instructions.
+#### What should happen:
+- A window opens with the title Squat Form Coach.
+- You hear a short voice intro explaining what to do.
+- The start screen appears with written instructions.
 
 ## Possible Extensions
 ### Ideas for future improvements:
-Add negative / corrective feedback, e.g.:
-“Try to keep your back straight.”
-“Control your descent.”
-Support multiple exercises (push-ups, lunges) through configuration.
-Add a more advanced UI with:
-Per-set timer
-Rest intervals
-Graphs of knee angle over time.
-Support Windows / Linux by switching to a cross-platform TTS library again
+- Add negative / corrective feedback, e.g.:
+  - “Try to keep your back straight.”
+  - “Control your descent.”
+- Support multiple exercises (push-ups, lunges) through configuration.
+- Add a more advanced UI with:
+  - Per-set timer
+  - Rest intervals
+- Support Windows / Linux by switching to a cross-platform TTS library again
