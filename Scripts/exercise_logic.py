@@ -18,8 +18,8 @@ LandmarkMap = Mapping[str, Landmark]
 
 
 @dataclass
-# Container describing the result of a counter update.
 class SquatEvent:
+    # Collects the most recent knee angle, logical state, and whether a rep finished.
 
     angle: float
     state: str
@@ -29,6 +29,9 @@ class SquatEvent:
 class SquatCounter:
     """
     Counts squat repetitions using hip/knee/ankle landmarks.
+
+    The counter behaves like a very small state machine ("up" -> "down" -> "up")
+    so that every cycle represents one repetition.
 
     Parameters
     ----------
@@ -62,12 +65,18 @@ class SquatCounter:
         self.min_movement = min_movement
 
         self.rep_count = 0
-        self.state = "up"
+        self.state = "up"  # Start at the top to avoid false reps on launch.
         self._last_angle: Optional[float] = None
 
     @staticmethod
     def _angle(a: Landmark, b: Landmark, c: Landmark) -> float:
-        """Return the angle ABC (with B as the vertex) in degrees."""
+        """
+        Return the knee angle, using the knee as the vertex.
+
+        Computing angles with vectors keeps the method agnostic to camera view
+        and avoids hard-coding distance rules that would break if the camera
+        moves closer or further away.
+        """
 
         a_vec = np.array(a, dtype=np.float64)
         b_vec = np.array(b, dtype=np.float64)
@@ -97,6 +106,8 @@ class SquatCounter:
         if key in landmarks:
             return landmarks[key]
         if name in landmarks:
+            # Accept un-prefixed keys so the caller can reuse this class without
+            # renaming values returned by their pose detector.
             return landmarks[name]
         raise KeyError(f"Missing landmark '{key}' in input")
 
@@ -129,7 +140,7 @@ class SquatCounter:
         rep_completed = False
 
         if last_angle is not None and abs(angle - last_angle) < self.min_movement:
-            # Ignore negligible changes to avoid flickering around thresholds.
+            # Ignore tiny changes so that body sway or jitter does not flip states.
             return SquatEvent(angle=angle, state=self.state, rep_completed=False)
 
         if self.state == "up" and angle <= self.down_angle:
@@ -137,6 +148,7 @@ class SquatCounter:
         elif self.state == "down" and angle >= self.up_angle:
             self.state = "up"
             self.rep_count += 1
+            # Only mark the rep when the user returns to the starting (up) pose.
             rep_completed = True
 
         return SquatEvent(angle=angle, state=self.state, rep_completed=rep_completed)
