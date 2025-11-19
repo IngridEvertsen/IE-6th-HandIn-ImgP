@@ -10,6 +10,7 @@ WHAT THIS FILE DOES
 
 from __future__ import annotations
 
+import itertools
 import platform
 import subprocess
 import time
@@ -50,20 +51,39 @@ def speak(text: str) -> None:
 class SoundFeedback:
     """Small helper that wraps :func:`speak` with workout-specific phrasing."""
 
-    def __init__(
+    def __init__
+    (
         self,
         *,
         enabled: bool = True,
-        positive_prompt: str = "Great job",
+        goal: int = 20,
     ) -> None:
-        self.positive_prompt = positive_prompt
+        self.goal = goal
+        self._encouragements = itertools.cycle
+        (
+            [
+                "Good job!",
+                "Keep going!",
+                "You're nearly there!",
+            ]
+        )
+        self._goal_announced = False
         self.set_enabled(enabled)
 
     def set_enabled(self, flag: bool) -> None:
         set_enabled(flag)
 
     def announce_repetition(self, count: int) -> None:
-        speak(f"{self.positive_prompt}! That's {count} reps.")
+        if count >= self.goal and not self._goal_announced:
+            speak("Great job, you did it!")
+            self._goal_announced = True
+            return
+
+        if count % 5 == 0:
+            speak(f"That's {count} reps completed.")
+        else:
+            speak(next(self._encouragements))
 
 
 __all__ = ["set_enabled", "speak", "SoundFeedback"]
+
