@@ -24,7 +24,8 @@ Landmark = Tuple[float, float]
 LandmarkMap = Dict[str, Landmark]
 
 # COCO keypoint ordering used by YOLO pose models
-KEYPOINT_NAMES: Sequence[str] = (
+KEYPOINT_NAMES: Sequence[str] = 
+(
     "nose",
     "left_eye",
     "right_eye",
@@ -46,7 +47,8 @@ KEYPOINT_NAMES: Sequence[str] = (
 
 KEYPOINT_INDEX = {name: idx for idx, name in enumerate(KEYPOINT_NAMES)}
 
-SKELETON_EDGES: Sequence[Tuple[str, str]] = (
+SKELETON_EDGES: Sequence[Tuple[str, str]] = 
+(
     ("left_shoulder", "right_shoulder"),
     ("left_hip", "right_hip"),
     ("left_shoulder", "left_elbow"),
@@ -95,7 +97,8 @@ class PoseDetector:
     outputs.
     """
 
-    def __init__(
+    def __init__
+    (
         self,
         config: PoseDetectionConfig | None = None,
         *,
@@ -121,7 +124,8 @@ class PoseDetector:
             # letting the less readable default exception reach the user.
             self.model = YOLO(self.config.model_path)
         except FileNotFoundError as exc:
-            raise FileNotFoundError(
+            raise FileNotFoundError
+            (
                 "Unable to initialize PoseDetector because the model weights are missing."
             ) from exc
 
@@ -139,7 +143,8 @@ class PoseDetector:
 
         annotated = frame.copy()
         # ``self.model`` behaves like a callable and accepts numpy arrays (OpenCV images).
-        results = self.model(
+        results = self.model
+        (
             frame,
             device=self.config.device,
             conf=self.config.conf_threshold,
@@ -170,12 +175,14 @@ class PoseDetector:
         return annotated, best_landmarks
 
     def _name_landmarks(self, keypoints: np.ndarray) -> LandmarkMap:
-        return {
+        return 
+        {
             name: (float(coord[0]), float(coord[1]))
             for name, coord in zip(KEYPOINT_NAMES, keypoints)
         }
 
-    def _draw_pose(
+    def _draw_pose
+    (
         self,
         frame: np.ndarray,
         keypoints: np.ndarray,
@@ -198,4 +205,30 @@ class PoseDetector:
             cv2.circle(frame, center, 4, (0, 255, 255), -1)
 
 
-__all__ = ["PoseDetector", "PoseDetectionConfig"]
+def body_fully_visible
+(
+    landmarks: LandmarkMap,
+    frame_shape: Tuple[int, int, int],
+    *,
+    margin: int = 25,
+) -> bool:
+    """Return ``True`` when every detected landmark sits well inside the frame."""
+
+    if not landmarks:
+        return False
+
+    height, width = frame_shape[:2]
+    xs = [pt[0] for pt in landmarks.values()]
+    ys = [pt[1] for pt in landmarks.values()]
+
+    return 
+    (
+        min(xs) >= margin
+        and min(ys) >= margin
+        and max(xs) <= (width - margin)
+        and max(ys) <= (height - margin)
+    )
+
+
+__all__ = ["PoseDetector", "PoseDetectionConfig", "body_fully_visible"]
+
