@@ -13,9 +13,11 @@ We put this in its own file to:
     - Keep the code in main.py less cluttered.
     - Make it easier to re-use pose detection for other exercises later.
 """
-import cv2
+
+import cv2 as cv
 import mediapipe as mp
 import numpy as np
+
 
 class PoseDetector:
     """
@@ -24,7 +26,7 @@ class PoseDetector:
     Typical usage inside a video loop:
         detector = PoseDetector()
         frame = detector.find_pose(frame)
-        angle = detector.get_knee_angle(frame, side='left')
+        angle, knee_point = detector.get_knee_angle(frame, side='left')
     """
 
     def __init__(self,
@@ -66,15 +68,14 @@ class PoseDetector:
             The same frame, optionally with landmarks drawn.
         """
         # MediaPipe expects RGB images
-        img_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        img_rgb = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
 
         # Run pose estimation
         self.results = self.pose.process(img_rgb)
 
         # Draw skeleton on the original BGR frame if we have landmarks
         if self.results.pose_landmarks and draw:
-            self.mp_drawing.draw_landmarks
-            (
+            self.mp_drawing.draw_landmarks(
                 frame,
                 self.results.pose_landmarks,
                 self.mp_pose.POSE_CONNECTIONS
@@ -132,13 +133,13 @@ class PoseDetector:
 
         """
         Calculate the angle at the knee using vector math:
-    
+
         Vector 1: from knee to hip
         Vector 2: from knee to ankle
-        
+
         Then we use the cosine rule / dot product to find the angle between them.
         """
-      
+
         v1 = hip - knee
         v2 = ankle - knee
 
