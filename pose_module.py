@@ -34,8 +34,7 @@ class PoseDetector:
                  min_detection_confidence=0.5,
                  min_tracking_confidence=0.5):
         # Store Pose configuration
-        self.pose = mp.solutions.pose.Pose
-        (
+        self.pose = mp.solutions.pose.Pose(
             static_image_mode=static_image_mode,
             model_complexity=model_complexity,
             enable_segmentation=enable_segmentation,

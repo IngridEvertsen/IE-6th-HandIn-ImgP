@@ -40,8 +40,7 @@ class AudioCoach:
         self.last_spoken_time = 0.0
 
         # Some variation in positive feedback messages
-        self.rep_praise_phrases = 
-        [
+        self.rep_praise_phrases = [
             "Well done.",
             "That's it.",
             "There you go.",
