@@ -1,6 +1,6 @@
 # IE-6th-HandIn-ImgP Repository
 Mini Project for the course "Image Processing", from the third semester of the Medialogy Bachelor at Aalborg University - Campus Copenhagen.
-> *"A simple game or app using OpenCV and another computer vision library (e.g. MediaPipe, Ultralytics, etc.), with code and a short demo video."*
+> *"Make a simple game or app using OpenCV and another computer vision library (e.g. MediaPipe, Ultralytics, etc.), with code and a short demo video."*
 
 # Squat Form Coach 🏋️‍♀️
 
