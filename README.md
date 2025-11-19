@@ -73,7 +73,7 @@ python3 squat_trainer.py
 - You hear a short voice intro explaining what to do.
 - The start screen appears with written instructions.
 
-## Possible Extensions
+## 4. Possible Extensions
 ### Ideas for future improvements:
 - Add negative / corrective feedback, e.g.:
   - “Try to keep your back straight.”
