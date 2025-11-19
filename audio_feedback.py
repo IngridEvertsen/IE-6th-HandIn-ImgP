@@ -2,37 +2,32 @@
 audio_feedback.py
 
 Purpose:
-----------------------------------------------------------------
+--------
 This script defines a small "AudioCoach" class that handles:
-    - Text-to-speech feedback when the user performs good squats.
+    - Spoken feedback when the user performs good squats.
     - Motivational phrases ("Well done", "Nice depth", etc.).
     - Simple rep counting messages ("That's 5 reps", "10 to go", etc.).
 
-We keep this separate from the main OpenCV loop so:
-    - The main code is easier to read.
-    - Audio logic can be reused for other exercises or projects.
+We use macOS' built-in 'say' command instead of a Python TTS library,
+because it is extremely reliable in a virtual environment and easy to demo.
 """
 
 import threading
 import random
 import time
-
-import pyttsx3
+import subprocess
+import shutil
 
 
 class AudioCoach:
     """
-    Handles all speaking logic using pyttsx3.
+    Handles all speaking logic using macOS' 'say' command.
 
-    To avoid freezing the video, each message is spoken in a small background thread.
+    We run each message in a small background thread so that
+    the main video loop (OpenCV) never freezes while audio is playing.
     """
 
     def __init__(self, target_reps=20, speak_delay=0.7):
-        # Create and configure the TTS engine
-        self.engine = pyttsx3.init()
-        self.engine.setProperty("rate", 180)   # speaking speed
-        self.engine.setProperty("volume", 1.0)  # max volume
-
         self.target_reps = target_reps
         self.speak_delay = speak_delay  # short pause so we don't spam too fast
 
@@ -49,61 +44,93 @@ class AudioCoach:
             "Form's looking good."
         ]
 
-    def _speak(self, text):
-        """
-        Internal method that actually runs the speech.
-        This is executed in a separate thread.
-        """
-        self.engine.say(text)
-        self.engine.runAndWait()
+        # Check if the 'say' command exists on this system (it should on macOS)
+        self.has_tts = shutil.which("say") is not None
+        if not self.has_tts:
+            print("Warning: 'say' command not found. Audio feedback will be disabled.")
 
+    # ---------------------------------------------------------------
+    # Internal low-level method for speech
+    # ---------------------------------------------------------------
+    def _speak(self, text):
+        """Internal: run the macOS 'say' command in a blocking way inside a thread."""
+        if not self.has_tts:
+            return
+
+        try:
+            subprocess.call(["say", text])
+        except Exception as e:
+            print(f"Audio error: {e}")
+
+    # ---------------------------------------------------------------
+    # Public non-blocking speech method
+    # ---------------------------------------------------------------
     def speak_async(self, text):
         """
-        Public method to speak without blocking the main video loop.
+        Speak a line of text without blocking the video loop.
+        Rate-limited using self.speak_delay.
         """
+        if not self.has_tts:
+            return
+
         current_time = time.time()
-        # Only speak if a bit of time has passed since the last message
+        # Only speak if enough time has passed
         if current_time - self.last_spoken_time < self.speak_delay:
             return
 
         self.last_spoken_time = current_time
 
         thread = threading.Thread(target=self._speak, args=(text,))
-        thread.daemon = True  # if program exits, thread will not block exit
+        thread.daemon = True
         thread.start()
 
+    # ---------------------------------------------------------------
+    # Intro message on the start screen
+    # ---------------------------------------------------------------
     def intro_message(self):
-        """
-        Short welcome instruction that can be played on the start screen.
-        """
-        text = ("Welcome to the Squat Form Coach. "
-                "Stand sideways to the camera, feet hip width apart. "
-                "When you're ready, press S to start.")
+        text = (
+            "Welcome to the Squat Form Coach. "
+            "Stand sideways to the camera, feet hip width apart. "
+            "When you're ready, press S to start."
+        )
         self.speak_async(text)
 
+    # ---------------------------------------------------------------
+    # Main method called every time a REP is counted
+    # ---------------------------------------------------------------
     def cheer_for_rep(self, rep_count):
         """
         Called whenever we detect a *valid* squat repetition.
 
-        It does two things:
-          1. Plays a short random praise line.
-          2. Sometimes adds extra info like "That's five reps" or "Five to go".
+        IMPORTANT:
+        ----------
+        To avoid the rate limiter blocking secondary messages,
+        we build ONE combined message and send it in a single call.
         """
+        if not self.has_tts:
+            return
+
+        parts = []
+
         # 1. Basic praise every rep
-        phrase = random.choice(self.rep_praise_phrases)
-        self.speak_async(phrase)
+        parts.append(random.choice(self.rep_praise_phrases))
 
-        # 2. Additional structured feedback
-        #    a) After every 5th rep, say how many we've done
+        # 2. Extra structured feedback
+        # a) After every 5th rep, say how many we've done
         if rep_count in (5, 10, 15):
-            self.speak_async(f"That's {rep_count} reps. Nice work.")
+            parts.append(f"That's {rep_count} reps. Nice work.")
 
-        #    b) When close to the target, say how many are left
+        # b) When close to the target, say how many are left
         reps_left = self.target_reps - rep_count
         if reps_left in (10, 5):
-            self.speak_async(f"You have {reps_left} squats left.")
+            parts.append(f"You have {reps_left} squats left.")
 
-        #    c) When done, celebrate
+        # c) When done, celebrate
         if rep_count == self.target_reps:
-            self.speak_async("You reached twenty squats. Awesome job. Workout complete.")
+            parts.append("You reached twenty squats. Awesome job. Workout complete.")
 
+        # Build one single spoken message
+        full_message = " ".join(parts)
+
+        # Speak it
+        self.speak_async(full_message)
