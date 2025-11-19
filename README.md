@@ -1,38 +1,17 @@
 # IE-6th-HandIn-ImgP Repository
 Mini Project for the course "Image Processing", from the third semester of the Medialogy Bachelor at Aalborg University - Campus Copenhagen.
-
-# Fitness Helper Demo
-This repository contains a modular fitness helper prototype built with OpenCV and
-Ultralytics YOLO pose estimation. The app monitors a user's movement through
-webcam input and provides visual + spoken feedback for common exercises such as
-squats and push-ups at this point, however with the possibility to upscale with added exercises later on.
-
-# Instructions 
-
-
-PS!!
-Exerciser should wear fitted clothing to that the model more easily and accurately measure the pose/anchor points.
-
-
-# Demo Video
-Link: #will be uploaded once done and recorded
-
+> *"A simple game or app using OpenCV and another computer vision library (e.g. MediaPipe, Ultralytics, etc.), with code and a short demo video."*
 
 # Squat Form Coach 🏋️‍♀️
 
 A small computer-vision based fitness helper that provides **real-time feedback** on bodyweight squats using **MediaPipe Pose** and **OpenCV**.
 The app guides the user through a simple squat exercise, gives spoken positive feedback when reps are detected, and counts towards a target of **20 squats**.
 
-
-## 1. Project Overview
-
-This mini-app was developed for an assignment requiring:
-
-> *"A simple game or app using OpenCV and another computer vision library (e.g. MediaPipe, Ultralytics, etc.), with code and a short demo video."*
+# Demo Video
+Link: #will be uploaded once done and recorded
 
 
 ### Main idea
-
 - The user stands **sideways** to the webcam, full body visible.
 - The system uses **MediaPipe Pose** to track key body landmarks.
 - It computes the **knee angle** (hip–knee–ankle) to understand squat depth.
