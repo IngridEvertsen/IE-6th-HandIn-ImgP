@@ -23,7 +23,6 @@ Link: #will be uploaded once done and recorded
 A small computer-vision based fitness helper that provides **real-time feedback** on bodyweight squats using **MediaPipe Pose** and **OpenCV**.
 The app guides the user through a simple squat exercise, gives spoken positive feedback when reps are detected, and counts towards a target of **20 squats**.
 
--------------------------------------------------------------------------
 
 ## 1. Project Overview
 
@@ -31,7 +30,6 @@ This mini-app was developed for an assignment requiring:
 
 > *"A simple game or app using OpenCV and another computer vision library (e.g. MediaPipe, Ultralytics, etc.), with code and a short demo video."*
 
--------------------------------------------------------------------------
 
 ### Main idea
 
@@ -48,7 +46,6 @@ The experience is wrapped in a small “mini app” UI:
 - Start screen with instructions.
 - Live overlay with rep count and current stage.
 
--------------------------------------------------------------------------
 
 ## 2. Files in This Project
 
@@ -74,7 +71,7 @@ The experience is wrapped in a small “mini app” UI:
 - `README.md`  
   This file – documentation and setup instructions.
 
--------------------------------------------------------------------------
+
 
 ## 3. Requirements
 
