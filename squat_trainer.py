@@ -358,8 +358,7 @@ def main():
             # Show the final frame
             cv.imshow(window_name, frame)
 
-            # Play cheering / voice feedback in the background
-            coach.speak_async("Target reached. Amazing work.")
+            coach.finish_message()
 
             # Keep the window open long enough for the voice to finish
             end_time = time.time() + 5  # keep it up ~5 seconds
