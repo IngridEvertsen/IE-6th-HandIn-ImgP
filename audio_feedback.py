@@ -1,15 +1,17 @@
 """
 audio_feedback.py
 
-Purpose:
---------
-This script defines a small "AudioCoach" class that handles:
-    - Spoken feedback when the user performs good squats.
-    - Motivational phrases ("Well done", "Nice depth", etc.).
-    - Simple rep counting messages ("That's 5 reps", "10 to go", etc.).
+Defines the AudioCoach class, which handles all spoken feedback
+for the Squat Form Coach mini-app.
 
-We use macOS' built-in 'say' command instead of a Python TTS library,
-because it is extremely reliable in a virtual environment and easy to demo.
+It uses macOS' built-in 'say' command so we don't need extra
+Python text-to-speech libraries.
+
+Main responsibilities:
+- Play a short spoken intro on startup.
+- Cheer when a rep is completed.
+- Give small progress updates at certain rep counts.
+- Say a final message when the workout is finished.
 """
 
 import threading
@@ -20,40 +22,33 @@ import shutil
 
 
 class AudioCoach:
-    """
-    Handles all speaking logic using macOS' 'say' command.
-
-    We run each message in a small background thread so that
-    the main video loop (OpenCV) never freezes while audio is playing.
-    """
-
-    def __init__(self, target_reps=20, speak_delay=0.7):
+    
+    def __init__(self, target_reps: int = 20, speak_delay: float = 0.7):
+        """
+        :param target_reps: How many reps the user should reach in total.
+        :param speak_delay: Minimum time gap (in seconds) between spoken lines, prevents overlapping / spam.
+        """
         self.target_reps = target_reps
-        self.speak_delay = speak_delay  # short pause so we don't spam too fast
-
-        # We keep track of the last time we spoke to avoid overlapping messages
+        self.speak_delay = speak_delay
         self.last_spoken_time = 0.0
 
-        # Some variation in positive feedback messages
+        # A small list of positive phrases to keep feedback varied.
         self.rep_praise_phrases = [
             "Well done.",
             "That's it.",
             "There you go.",
             "Looks good.",
             "Nice depth.",
-            "Form's looking good."
+            "Form's looking good.",
         ]
 
-        # Check if the 'say' command exists on this system (it should on macOS)
+        # Check if the 'say' command exists on this system (macOS).
         self.has_tts = shutil.which("say") is not None
         if not self.has_tts:
-            print("Warning: 'say' command not found. Audio feedback will be disabled.")
+            print("Warning: 'say' command not found.")
 
-    # ---------------------------------------------------------------
-    # Internal low-level method for speech
-    # ---------------------------------------------------------------
-    def _speak(self, text):
-        """Internal: run the macOS 'say' command in a blocking way inside a thread."""
+    # Internal helpers
+    def _speak(self, text: str):
         if not self.has_tts:
             return
 
@@ -62,32 +57,33 @@ class AudioCoach:
         except Exception as e:
             print(f"Audio error: {e}")
 
-    # ---------------------------------------------------------------
-    # Public non-blocking speech method
-    # ---------------------------------------------------------------
-    def speak_async(self, text):
+    # Public methods that can be called from the main
+    def speak_async(self, text: str):
         """
         Speak a line of text without blocking the video loop.
-        Rate-limited using self.speak_delay.
+
+        - Uses a background thread so OpenCV can keep updating the camera.
+        - Uses self.speak_delay so lines don't overlap too much.
         """
         if not self.has_tts:
             return
 
-        current_time = time.time()
-        # Only speak if enough time has passed
-        if current_time - self.last_spoken_time < self.speak_delay:
+        now = time.time()
+        if now - self.last_spoken_time < self.speak_delay:
+            # Too soon since the last message -> skip this one
             return
 
-        self.last_spoken_time = current_time
+        self.last_spoken_time = now
 
         thread = threading.Thread(target=self._speak, args=(text,))
-        thread.daemon = True
+        thread.daemon = True  # thread will not keep the program alive on its own
         thread.start()
 
-    # ---------------------------------------------------------------
-    # Intro message on the start screen
-    # ---------------------------------------------------------------
     def intro_message(self):
+        """
+        Short spoken intro played once when the app starts.
+        Called from squat_trainer.py after a small delay.
+        """
         text = (
             "Welcome to the Squat Form Coach. "
             "Stand sideways to the camera, feet hip width apart. "
@@ -95,42 +91,38 @@ class AudioCoach:
         )
         self.speak_async(text)
 
-    # ---------------------------------------------------------------
-    # Main method called every time a REP is counted
-    # ---------------------------------------------------------------
-    def cheer_for_rep(self, rep_count):
+    def cheer_for_rep(self, rep_count: int):
         """
         Called whenever we detect a *valid* squat repetition.
 
-        IMPORTANT:
-        ----------
-        To avoid the rate limiter blocking secondary messages,
-        we build ONE combined message and send it in a single call.
+        Builds one short sentence combining:
+        - a praise phrase
+        - optional progress info (e.g. '5 reps', '10 squats left').
         """
         if not self.has_tts:
             return
 
         parts = []
 
-        # 1. Basic praise every rep
+        # 1) Basic praise every rep
         parts.append(random.choice(self.rep_praise_phrases))
 
-        # 2. Extra structured feedback
-        # a) After every 5th rep, say how many we've done
+        # 2) At certain rep numbers, say how many we've done
         if rep_count in (5, 10, 15):
-            parts.append(f"That's {rep_count} reps. Nice work.")
+            parts.append(f"That's {rep_count} reps.")
 
-        # b) When close to the target, say how many are left
+        # 3) If close to the goal, mention how many are left
         reps_left = self.target_reps - rep_count
         if reps_left in (10, 5):
-            parts.append(f"You have {reps_left} squats left.")
+            parts.append(f"{reps_left} squats left.")
 
-        # c) When done, celebrate
-        if rep_count == self.target_reps:
-            parts.append("You reached twenty squats. Awesome job. Workout complete.")
-
-        # Build one single spoken message
+        # Final combined message for this rep
         full_message = " ".join(parts)
-
-        # Speak it
         self.speak_async(full_message)
+
+    def finish_message(self):
+        """
+        Spoken line when the user reaches the target number of reps.
+        Called once from squat_trainer.py at the end of the workout.
+        """
+        self.speak_async("Target reached. Amazing work. Workout complete.")

@@ -24,55 +24,115 @@ How the mini-app works:
 """
 
 import cv2 as cv
+import time
 
 from pose_module import PoseDetector
 from audio_feedback import AudioCoach
 
+# --- UI COLORS (BGR for OpenCV) ---
+# Palette from: #8DBBC2, #4F362A, #6F0D3A
+COLOR_HEADER  = (58, 13, 111)        # 6F0D3A cherry wine (used for main header and instructions)
+COLOR_SUBHEAD = (194, 187, 141)      # 8DBBC2 soft blue (used for subheaders)
+COLOR_VALUE   = (42, 54, 79)         # 4F362A deep brown (rep count + state)
+
+
 
 def draw_start_screen(frame):
     """
-    Draws a simple welcome / instruction overlay on top of the live camera feed.
-    This makes it feel more like a mini application instead of plain debug output.
+    Draws a welcome / instruction overlay on top of the live camera feed.
+    Styled to match the in-game HUD:
+      - Centered header in soft blue
+      - Left-aligned instructions
+      - Bottom hint text in same header color
     """
     h, w, _ = frame.shape
+    font = cv.FONT_HERSHEY_SIMPLEX
 
-    # Semi-transparent dark overlay to make text readable
-    overlay = frame.copy()
-    cv.rectangle(overlay, (0, 0), (w, h), (0, 0, 0), thickness=-1)
-    alpha = 0.6
-    frame = cv.addWeighted(overlay, alpha, frame, 1 - alpha, 0)
+    # ----- HEADER (CENTERED, SOFT BLUE, CAPS) -----
+    header_text = "SQUAT FORM COACH"
+    header_scale = 1.6
+    header_thickness = 3
 
-    # Title
-    cv.putText(frame, "Squat Form Coach",
-                (int(0.08 * w), int(0.2 * h)),
-                cv.FONT_HERSHEY_SIMPLEX,
-                1.3,
-                (255, 255, 255),
-                3,
-                cv.LINE_AA)
+    (header_w, header_h), _ = cv.getTextSize(header_text, font, header_scale, header_thickness)
+    header_x = (w - header_w) // 2
+    header_y = 70
 
-    # Short description
-    y0 = int(0.35 * h)
-    dy = 30
-    instructions = [
+    cv.putText(
+        frame,
+        header_text,
+        (header_x, header_y),
+        font,
+        header_scale,
+        COLOR_HEADER,
+        header_thickness,
+        cv.LINE_AA
+    )
+
+    # ----- LEFT COLUMN: INSTRUCTIONS -----
+    subheader_text = "WELCOME"
+    sub_scale = 0.95
+    sub_thick = 2
+
+    start_x = 40
+    base_y = 130
+
+    cv.putText(
+        frame,
+        subheader_text,
+        (start_x, base_y),
+        font,
+        sub_scale,
+        COLOR_SUBHEAD,
+        sub_thick,
+        cv.LINE_AA
+    )
+
+    lines = [
         "Stand sideways to the camera, full body visible.",
         "Feet hip-width apart, arms free.",
-        "You will perform bodyweight squats.",
-        "Go down until your knees are bent to about 90 degrees.",
+        "Perform bodyweight squats to about 90 degrees.",
         "You will hear feedback when your form is good.",
-        "Target: 20 squats.",
-        "",
-        "Press 'S' to start. Press 'Q' to quit."
+        "Target: 20 squats."
     ]
-    for i, line in enumerate(instructions):
-        y = y0 + i * dy
-        cv.putText(frame, line,
-                    (int(0.08 * w), y),
-                    cv.FONT_HERSHEY_SIMPLEX,
-                    0.7,
-                    (255, 255, 255),
-                    2,
-                    cv.LINE_AA)
+
+    body_scale = 0.75
+    body_thick = 2
+    line_spacing = 28
+    y = base_y + 35
+
+    for line in lines:
+        cv.putText(
+            frame,
+            line,
+            (start_x, y),
+            font,
+            body_scale,
+            (255, 255, 255),  # white text for clarity
+            body_thick,
+            cv.LINE_AA
+        )
+        y += line_spacing
+
+    # ----- CALL TO ACTION (BOTTOM, SOFT BLUE, CAPS) -----
+    bottom_text = "PRESS S TO START    TO QUIT -> PRESS Q"
+    bottom_scale = 0.8
+    bottom_thick = 2
+
+    (bt_w, bt_h), _ = cv.getTextSize(bottom_text, font, bottom_scale, bottom_thick)
+    bt_x = (w - bt_w) // 2
+    bt_y = h - 40
+
+    cv.putText(
+        frame,
+        bottom_text,
+        (bt_x, bt_y),
+        font,
+        bottom_scale,
+        COLOR_HEADER,
+        bottom_thick,
+        cv.LINE_AA
+    )
+
     return frame
 
 
@@ -86,17 +146,22 @@ def main():
 
     # Open default webcam
     cap = cv.VideoCapture(0)
-
     if not cap.isOpened():
         print("Error: Could not open webcam.")
         return
+
+    # Create a named window and set it to fullscreen
+    window_name = "Squat Form Coach"
+    cv.namedWindow(window_name, cv.WINDOW_NORMAL)
+    cv.setWindowProperty(window_name, cv.WND_PROP_FULLSCREEN, cv.WINDOW_FULLSCREEN)
 
     # State variables for our simple "state machine"
     started = False          # False = start screen, True = workout running
     rep_count = 0            # current number of completed squats
     stage = "starting"       # stages: "starting" -> "descent" -> "ascent"
 
-    # Optional: play intro once at the beginning
+    # Play intro once at the beginning, with a small delay
+    time.sleep(8)
     coach.intro_message()
 
     while True:
@@ -108,22 +173,21 @@ def main():
         # Flip horizontally so movement feels more like a mirror
         frame = cv.flip(frame, 1)
 
-        # Start screen until user presses 'S'
+        # ---------- START SCREEN ----------
         if not started:
             frame = draw_start_screen(frame)
-            cv.imshow("Squat Form Coach", frame)
+            cv.imshow(window_name, frame)
 
             key = cv.waitKey(30) & 0xFF
-            if key == ord('s') or key == ord('S'):
+            if key in (ord('s'), ord('S')):
                 started = True
-                # short audio cue for starting
                 coach.speak_async("Starting squat tracking. Let's go.")
-            elif key == ord('q') or key == ord('Q'):
+            elif key in (ord('q'), ord('Q')):
                 break
 
-            continue  # skip the rest of the loop until started
+            continue  # skip rest of loop until started
 
-        # ----- Workout mode -----
+        # ---------- WORKOUT MODE ----------
 
         # 1. Detect pose and draw skeleton
         frame = detector.find_pose(frame, draw=True)
@@ -131,102 +195,184 @@ def main():
         # 2. Compute knee angle from pose
         knee_angle, knee_point = detector.get_knee_angle(frame, side='left')
 
-        # 3. Visualize the knee angle
+        # 3. Visualize the knee angle and update stage/rep count
         if knee_angle is not None:
-            # Draw a small circle at the knee
+            # small circle on the knee
             cv.circle(frame, knee_point, 8, (0, 255, 255), thickness=-1)
 
-            # Display angle number near knee
+            # numeric angle label
             angle_text = f"{int(knee_angle)} deg"
-            cv.putText(frame, angle_text,
-                        (knee_point[0] + 10, knee_point[1] - 10),
-                        cv.FONT_HERSHEY_SIMPLEX,
-                        0.7,
-                        (0, 255, 255),
-                        2,
-                        cv.LINE_AA)
+            cv.putText(
+                frame,
+                angle_text,
+                (knee_point[0] + 10, knee_point[1] - 10),
+                cv.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (0, 255, 255),
+                2,
+                cv.LINE_AA
+            )
 
-            # 4. Squat detection logic (state machine inspired by open-source project)
-            #
-            # Idea:
-            # -----
-            # We look at how "open" or "closed" the knee angle is and use simple states:
-            #   - "starting" : standing fairly straight (big knee angle)
-            #   - "descent"  : moving down into the squat
-            #   - "ascent"   : coming up from the bottom; we count a rep here
-            #
-            # This logic is inspired by an open-source fitness pose project (MIT licensed),
-            # but implemented here in a simplified way for a single exercise and integrated
-            # with our own audio feedback system.
-
+            # simple squat state machine
             if knee_angle > 170:
-                # Very open angle -> basically standing straight
-                stage = "starting"
-
-            elif 90 < knee_angle <= 170 and stage == "starting":
-                # Moving down from standing toward a squat
-                stage = "descent"
-
-            elif knee_angle <= 90 and stage == "descent":
-                # Deep squat reached after a descent -> count one rep
-                stage = "ascent"
+                stage = "Standing Up"
+            elif 90 < knee_angle <= 170 and stage == "Standing Up":
+                stage = "Going Down"
+            elif knee_angle <= 90 and stage == "Going Down":
+                stage = "Coming Up"
                 rep_count += 1
                 coach.cheer_for_rep(rep_count)
 
-        # 5. Draw HUD (Heads-Up Display) with rep counter & status
+        # ---------- HUD / UI ----------
         h, w, _ = frame.shape
+        font = cv.FONT_HERSHEY_SIMPLEX
 
-        # Background rectangle for text
-        cv.rectangle(frame, (0, 0), (w, 60), (0, 0, 0), thickness=-1)
+        # Header
+        header_text = "SQUAT FORM COACH"
+        header_scale = 1.4
+        header_thickness = 3
+        (header_w, header_h), _ = cv.getTextSize(header_text, font, header_scale, header_thickness)
+        header_x = (w - header_w) // 2
+        header_y = 60
 
-        # Rep counter
-        cv.putText(frame, f"Reps: {rep_count}/{target_reps}",
-                    (20, 40),
-                    cv.FONT_HERSHEY_SIMPLEX,
-                    1.0,
-                    (0, 255, 0),
-                    2,
-                    cv.LINE_AA)
+        cv.putText(
+            frame,
+            header_text,
+            (header_x, header_y),
+            font,
+            header_scale,
+            COLOR_HEADER,
+            header_thickness,
+            cv.LINE_AA
+        )
 
-        # Stage indicator
-        stage_text = f"Stage: {stage.upper()}"
-        cv.putText(frame, stage_text,
-                    (int(w * 0.5), 40),
-                    cv.FONT_HERSHEY_SIMPLEX,
-                    0.9,
-                    (255, 255, 255),
-                    2,
-                    cv.LINE_AA)
+        # Left/right layout
+        left_x = 40
+        base_y = 150
+        right_margin = 40
 
-        # Simple hint at the bottom
-        cv.putText(frame, "Press 'Q' to quit.",
-                    (20, h - 20),
-                    cv.FONT_HERSHEY_SIMPLEX,
-                    0.7,
-                    (255, 255, 255),
-                    2,
-                    cv.LINE_AA)
+        sub_scale = 0.75
+        sub_thick = 2
+        val_scale = 1.3
+        val_thick = 3
 
-        cv.imshow("Squat Form Coach", frame)
+        # Left: REP COUNT
+        cv.putText(
+            frame,
+            "REP COUNT",
+            (left_x, base_y),
+            font,
+            sub_scale,
+            COLOR_SUBHEAD,
+            sub_thick,
+            cv.LINE_AA
+        )
 
-        # Stop conditions
+        rep_text = f"{rep_count}/{target_reps}"
+        cv.putText(
+            frame,
+            rep_text,
+            (left_x, base_y + 45),
+            font,
+            val_scale,
+            COLOR_VALUE,
+            val_thick,
+            cv.LINE_AA
+        )
+
+        # Right: STATE (right-aligned)
+        state_label = "STATE"
+        (label_w, _), _ = cv.getTextSize(state_label, font, sub_scale, sub_thick)
+        label_x = w - right_margin - label_w
+
+        cv.putText(
+            frame,
+            state_label,
+            (label_x, base_y),
+            font,
+            sub_scale,
+            COLOR_SUBHEAD,
+            sub_thick,
+            cv.LINE_AA
+        )
+
+        state_text = stage.upper()
+        (state_w, _), _ = cv.getTextSize(state_text, font, val_scale, val_thick)
+        state_x = w - right_margin - state_w
+
+        cv.putText(
+            frame,
+            state_text,
+            (state_x, base_y + 45),
+            font,
+            val_scale,
+            COLOR_VALUE,
+            val_thick,
+            cv.LINE_AA
+        )
+
+        # Bottom hint
+        hint_text = "TO QUIT -> PRESS Q"
+        cv.putText(
+            frame,
+            hint_text,
+            (40, h - 40),
+            font,
+            0.75,
+            COLOR_HEADER,
+            2,
+            cv.LINE_AA
+        )
+
+        # Show frame
+        cv.imshow(window_name, frame)
+
+        # FINAL PHASE AND KEY HANDLING 
         key = cv.waitKey(10) & 0xFF
-        if key == ord('q') or key == ord('Q'):
+        if key in (ord('q'), ord('Q')):
             break
 
         if rep_count >= target_reps:
-            # Brief pause to allow final audio to finish
-            cv.putText(frame, "Target reached! Great job.",
-                        (int(0.1 * w), int(0.5 * h)),
-                        cv.FONT_HERSHEY_SIMPLEX,
-                        1.0,
-                        (0, 255, 0),
-                        2,
-                        cv.LINE_AA)
-            cv.imshow("Squat Form Coach", frame)
-            cv.waitKey(2000)
+            # ----- Centered blue "target reached" text + cheering -----
+            final_text = "TARGET REACHED, AMAZING WORK!"
+            final_scale = 1.2
+            final_thick = 3
+
+            # Measure text size so we can center it
+            (text_w, text_h), _ = cv.getTextSize(final_text, font, final_scale, final_thick)
+            text_x = (w - text_w) // 2
+            text_y = h // 2
+
+            # Draw the message in the same soft blue as the header
+            cv.putText(
+                frame,
+                final_text,
+                (text_x, text_y),
+                font,
+                final_scale,
+                COLOR_SUBHEAD,    
+                final_thick,
+                cv.LINE_AA
+            )
+
+            # Show the final frame
+            cv.imshow(window_name, frame)
+
+            # Play cheering / voice feedback in the background
+            coach.speak_async("Target reached. Amazing work.")
+
+            # Keep the window open long enough for the voice to finish
+            end_time = time.time() + 5  # keep it up ~5 seconds
+            while time.time() < end_time:
+                # keep re-showing the same final frame
+                cv.imshow(window_name, frame)
+                key = cv.waitKey(50) & 0xFF
+                if key in (ord('q'), ord('Q')):
+                    break
+
             break
 
+    
     cap.release()
     cv.destroyAllWindows()
 
