@@ -18,15 +18,13 @@ import cv2 as cv
 import mediapipe as mp
 import numpy as np
 
-
+#----------------------------------------------------------
+# POSE DETECTOR CLASS (pose detection and angle calculation)
+#----------------------------------------------------------
 class PoseDetector:
     """
     Simple wrapper around MediaPipe Pose.
-
-    Typical usage inside a video loop:
-        detector = PoseDetector()
-        frame = detector.find_pose(frame)
-        angle, knee_point = detector.get_knee_angle(frame, side='left')
+    Provides methods to find the pose in a frame and calculate knee angles.
     """
 
     def __init__(self,
@@ -84,9 +82,6 @@ class PoseDetector:
         return frame
 
     def _landmark_to_pixel(self, frame, landmark):
-        """
-        Convert a single landmark (x,y in [0,1]) to pixel coordinates.
-        """
         h, w, _ = frame.shape
         x_px = int(landmark.x * w)
         y_px = int(landmark.y * h)
@@ -152,7 +147,7 @@ class PoseDetector:
         dot_product = np.dot(v1, v2)
         cos_angle = dot_product / (v1_norm * v2_norm)
 
-        # Numerical errors can push cos_angle slightly outside [-1, 1]
+        # Numerical errors can push cos_angle slightly outside [-1, 1] which would cause arccos to fail therefore we clip it
         cos_angle = np.clip(cos_angle, -1.0, 1.0)
 
         angle_rad = np.arccos(cos_angle)

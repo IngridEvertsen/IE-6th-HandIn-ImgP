@@ -7,48 +7,47 @@ This is the main script that ties everything together:
     - Captures video from the webcam using OpenCV.
     - Uses PoseDetector (pose_module.py) to estimate the user's knee angle.
     - Detects squat repetitions based on knee angle over time.
-    - Shows a simple "mini app" interface with a start screen and live overlay.
+    - Shows a simple "mini app" interface (HUD) with a start screen and live overlay.
     - Uses AudioCoach (audio_feedback.py) to give spoken feedback and rep counts.
 
 How the mini-app works:
 -----------------------
 1. Start the script.
-2. A welcome screen appears with instructions (and an optional voice intro).
+2. A welcome screen appears with instructions and a voice intro.
 3. When the user is ready, they stand side-on to the camera and press 'S' to start.
 4. The app then tracks squats using a small state machine:
-       - "starting": user stands fairly straight (knee angle ~170°+).
-       - "descent": knee angle closes while the user moves down.
-       - "ascent": when the angle goes below ~90° after a descent, we count one rep.
-       - Each valid squat triggers short audio praise + rep info.
+       - "standing Up": user stands fairly straight (knee angle ~170°+).
+       - "Going Down": knee angle closes while the user moves down.
+       - "Coming Up": when the angle goes below ~90° after a descent, we count one rep.
+       - Valid squats triggers short audio praise + rep info.
 5. The app stops automatically when 20 reps are reached, or you can press 'Q' to quit.
 """
 
 import cv2 as cv
 import time
 
-from pose_module import PoseDetector
-from audio_feedback import AudioCoach
+from pose_module import PoseDetector        # import our PoseDetector class
+from audio_feedback import AudioCoach       # import our AudioCoach class
 
-# --- UI COLORS (BGR for OpenCV) ---
+# UI COLORS (BGR for OpenCV)
 # Palette from: #8DBBC2, #4F362A, #6F0D3A
 COLOR_HEADER  = (58, 13, 111)        # 6F0D3A cherry wine (used for main header and instructions)
 COLOR_SUBHEAD = (194, 187, 141)      # 8DBBC2 soft blue (used for subheaders)
 COLOR_VALUE   = (42, 54, 79)         # 4F362A deep brown (rep count + state)
 
 
-
+# ----------------------------------------------------------
+# START SCREEN DRAWING FUNCTION
+# ----------------------------------------------------------
 def draw_start_screen(frame):
     """
     Draws a welcome / instruction overlay on top of the live camera feed.
-    Styled to match the in-game HUD:
-      - Centered header in soft blue
-      - Left-aligned instructions
-      - Bottom hint text in same header color
+    Styled to match the in-game HUD (heads-up display).
     """
     h, w, _ = frame.shape
     font = cv.FONT_HERSHEY_SIMPLEX
 
-    # ----- HEADER (CENTERED, SOFT BLUE, CAPS) -----
+    # HEADER (CENTERED, CHERRY PINK, CAPS)
     header_text = "SQUAT FORM COACH"
     header_scale = 1.6
     header_thickness = 3
@@ -68,7 +67,7 @@ def draw_start_screen(frame):
         cv.LINE_AA
     )
 
-    # ----- LEFT COLUMN: INSTRUCTIONS -----
+    # LEFT COLUMN: INSTRUCTIONS HEADER
     subheader_text = "WELCOME"
     sub_scale = 0.95
     sub_thick = 2
@@ -87,6 +86,7 @@ def draw_start_screen(frame):
         cv.LINE_AA
     )
 
+    # LEFT COLUMN: INSTRUCTIONS BODY
     lines = [
         "Stand sideways to the camera, full body visible.",
         "Feet hip-width apart, arms free.",
@@ -107,13 +107,13 @@ def draw_start_screen(frame):
             (start_x, y),
             font,
             body_scale,
-            (255, 255, 255),  # white text for clarity
+            (255, 255, 255),  # White text
             body_thick,
             cv.LINE_AA
         )
         y += line_spacing
 
-    # ----- CALL TO ACTION (BOTTOM, SOFT BLUE, CAPS) -----
+    # CALL TO ACTION (BOTTOM, CHERRY PINK, CAPS)
     bottom_text = "PRESS S TO START    TO QUIT -> PRESS Q"
     bottom_scale = 0.8
     bottom_thick = 2
@@ -135,16 +135,18 @@ def draw_start_screen(frame):
 
     return frame
 
-
+# ----------------------------------------------------------
+# MAIN APPLICATION LOOP
+# ----------------------------------------------------------
 def main():
-    # --- Configuration parameters ---
+    # Configuration parameters
     target_reps = 20
 
-    # Create helper objects
+    # Create helper objects for pose detection and audio feedback
     detector = PoseDetector()
     coach = AudioCoach(target_reps=target_reps)
 
-    # Open default webcam
+    # Open default webcam (should be at index 0)
     cap = cv.VideoCapture(0)
     if not cap.isOpened():
         print("Error: Could not open webcam.")
@@ -158,9 +160,9 @@ def main():
     # State variables for our simple "state machine"
     started = False          # False = start screen, True = workout running
     rep_count = 0            # current number of completed squats
-    stage = "starting"       # stages: "starting" -> "descent" -> "ascent"
+    stage = "starting"       # stages: "starting" -> "going down" -> "coming up"
 
-    # Play intro once at the beginning, with a small delay
+    # Play intro once at the beginning, with a small delay so that window has loaded before audio starts
     time.sleep(8)
     coach.intro_message()
 
@@ -173,7 +175,9 @@ def main():
         # Flip horizontally so movement feels more like a mirror
         frame = cv.flip(frame, 1)
 
-        # ---------- START SCREEN ----------
+        # ----------------------------------------------------------
+        # START SCREEN MODE
+        # ----------------------------------------------------------
         if not started:
             frame = draw_start_screen(frame)
             cv.imshow(window_name, frame)
@@ -187,8 +191,9 @@ def main():
 
             continue  # skip rest of loop until started
 
-        # ---------- WORKOUT MODE ----------
-
+        # ----------------------------------------------------------
+        # WORKOUT MODE 
+        # ----------------------------------------------------------
         # 1. Detect pose and draw skeleton
         frame = detector.find_pose(frame, draw=True)
 
@@ -208,7 +213,7 @@ def main():
                 (knee_point[0] + 10, knee_point[1] - 10),
                 cv.FONT_HERSHEY_SIMPLEX,
                 0.7,
-                (0, 255, 255),
+                (58, 13, 111),
                 2,
                 cv.LINE_AA
             )
@@ -223,7 +228,9 @@ def main():
                 rep_count += 1
                 coach.cheer_for_rep(rep_count)
 
-        # ---------- HUD / UI ----------
+        # ----------------------------------------------------------
+        # HEADS UP DISPLAY (HUD)
+        # ---------------------------------------------------------- 
         h, w, _ = frame.shape
         font = cv.FONT_HERSHEY_SIMPLEX
 
@@ -311,7 +318,7 @@ def main():
             cv.LINE_AA
         )
 
-        # Bottom hint
+        # Bottom instruction
         hint_text = "TO QUIT -> PRESS Q"
         cv.putText(
             frame,
@@ -327,13 +334,15 @@ def main():
         # Show frame
         cv.imshow(window_name, frame)
 
-        # FINAL PHASE AND KEY HANDLING 
+        # ----------------------------------------------------------
+        # FINAL PHASE AND KEY HANDLING (quit or finish)
+        # ----------------------------------------------------------
         key = cv.waitKey(10) & 0xFF
         if key in (ord('q'), ord('Q')):
             break
 
         if rep_count >= target_reps:
-            # ----- Centered blue "target reached" text + cheering -----
+            # Centered blue "target reached" text
             final_text = "TARGET REACHED, AMAZING WORK!"
             final_scale = 1.2
             final_thick = 3
@@ -343,7 +352,7 @@ def main():
             text_x = (w - text_w) // 2
             text_y = h // 2
 
-            # Draw the message in the same soft blue as the header
+            # Draw the message
             cv.putText(
                 frame,
                 final_text,
@@ -355,10 +364,11 @@ def main():
                 cv.LINE_AA
             )
 
+             # Play finishing message
+            coach.finish_message()
+
             # Show the final frame
             cv.imshow(window_name, frame)
-
-            coach.finish_message()
 
             # Keep the window open long enough for the voice to finish
             end_time = time.time() + 5  # keep it up ~5 seconds
@@ -371,10 +381,11 @@ def main():
 
             break
 
-    
     cap.release()
     cv.destroyAllWindows()
 
-
+# ----------------------------------------------------------
+# ENTRY POINT (calling main() function)
+# ----------------------------------------------------------
 if __name__ == "__main__":
     main()

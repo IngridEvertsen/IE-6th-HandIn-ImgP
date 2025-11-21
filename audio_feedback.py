@@ -14,13 +14,15 @@ Main responsibilities:
 - Say a final message when the workout is finished.
 """
 
-import threading
-import random
-import time
-import subprocess
-import shutil
+import threading            # for background audio playback
+import random               # for varied praise phrases
+import time                 # for timing between spoken lines
+import subprocess           # for calling the 'say' command
+import shutil               # for checking if 'say' command exists
 
-
+#----------------------------------------------------------
+# AUDIO COACH CLASS (spoken feedback handler)
+#----------------------------------------------------------
 class AudioCoach:
     
     def __init__(self, target_reps: int = 20, speak_delay: float = 0.7):
@@ -76,14 +78,13 @@ class AudioCoach:
         self.last_spoken_time = now
 
         thread = threading.Thread(target=self._speak, args=(text,))
-        thread.daemon = True  # thread will not keep the program alive on its own
+        thread.daemon = True 
         thread.start()
 
+    # ----------------------------------------------------------
+    # PUBLIC METHODS FOR AUDIO FEEDBACK (called from squat_trainer.py)
+    # ----------------------------------------------------------
     def intro_message(self):
-        """
-        Short spoken intro played once when the app starts.
-        Called from squat_trainer.py after a small delay.
-        """
         text = (
             "Welcome to the Squat Form Coach. "
             "Stand sideways to the camera, feet hip width apart. "
