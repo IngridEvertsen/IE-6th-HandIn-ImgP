@@ -53,7 +53,7 @@ The experience is wrapped in a small “mini app” UI:
 
 ## 3. Requirements
 
-- **Python**: 3.x (tested on macOS with Python 3)
+- **Python**: (tested on macOS with Python 3)
 - **Operating system**: macOS (for the `say` command used for audio)
 
 ### Python packages
