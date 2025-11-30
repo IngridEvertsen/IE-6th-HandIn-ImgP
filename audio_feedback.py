@@ -1,11 +1,9 @@
 """
 audio_feedback.py
 
-Defines the AudioCoach class, which handles all spoken feedback
-for the Squat Form Coach mini-app.
+Defines the AudioCoach class, which handles all spoken feedback for the Squat Form Coach mini-app.
 
-It uses macOS' built-in 'say' command so we don't need extra
-Python text-to-speech libraries.
+It uses macOS' built-in 'say' command so we don't need extra Python text-to-speech libraries.
 
 Main responsibilities:
 - Play a short spoken intro on startup.
@@ -59,7 +57,7 @@ class AudioCoach:
         except Exception as e:
             print(f"Audio error: {e}")
 
-    # Public methods that can be called from the main
+    # Public helpers
     def speak_async(self, text: str):
         """
         Speak a line of text without blocking the video loop.
@@ -76,7 +74,7 @@ class AudioCoach:
             return
 
         self.last_spoken_time = now
-
+        #Playes the message once its not too soon
         thread = threading.Thread(target=self._speak, args=(text,))
         thread.daemon = True 
         thread.start()
