@@ -380,7 +380,7 @@ def main():
                     break
 
             break
-
+    #Close "camera" window
     cap.release()
     cv.destroyAllWindows()
 
