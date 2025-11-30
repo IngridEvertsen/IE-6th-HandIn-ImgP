@@ -20,7 +20,7 @@ The app guides the user through a simple squat exercise, gives spoken positive f
   - Gives **spoken praise** (e.g. “Well done”, “Nice depth”).
   - Occasionally informs the user how many reps are done / left.
 
-The experience is wrapped in a small “mini app” UI:
+The experience is visualised/shown in a small “mini app” UI:
 - Start screen with instructions.
 - Live overlay with rep count and current stage.
 
@@ -32,19 +32,19 @@ The experience is wrapped in a small “mini app” UI:
   - Opens webcam (OpenCV).
   - Displays the start screen and workout UI.
   - Uses `PoseDetector` to get knee angle.
-  - Uses a state machine to detect squat reps.
+  - Uses a state machine to detect squat reps (Starting -> Going Down -> Coming Up).
   - Calls `AudioCoach` to give spoken feedback.
 
 - `pose_module.py`  
-  A small helper module that wraps **MediaPipe Pose**:
+  A small helper module that uses **MediaPipe Pose** to track and calculate pose:
   - Detects pose landmarks.
   - Converts normalized coordinates to pixels.
   - Computes the **knee angle** using vector math.
 
 - `audio_feedback.py`  
-  Handles **audio coaching**:
+  Handles **audio coaching/feedback**:
   - Uses macOS’ built-in `say` command for text-to-speech.
-  - Provides short praise lines and rep-count feedback.
+  - Holds methods for providing short praise lines and rep-count feedback, as well as intro.
 
 - `README.md`  
   This file – documentation and setup instructions.
@@ -71,15 +71,16 @@ python3 squat_trainer.py
 #### What should happen:
 - A window opens with the title Squat Form Coach.
 - You hear a short voice intro explaining what to do.
-- The start screen appears with written instructions.
+- The start screen appears with written instructions and tracking.
 
 ## 4. Possible Extensions
 ### Ideas for future improvements:
 - Add negative / corrective feedback, e.g.:
   - “Try to keep your back straight.”
   - “Control your descent.”
-- Support multiple exercises (push-ups, lunges) through configuration.
+- Support multiple exercises (push-ups, lunges).
 - Add a more advanced UI with:
   - Per-set timer
   - Rest intervals
-- Support Windows / Linux by switching to a cross-platform TTS library again
+  - Prettier more "finished" looking buttons/text etc.
+- Support Windows / Linux / etc.
