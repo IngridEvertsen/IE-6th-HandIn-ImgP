@@ -3,15 +3,11 @@ pose_module.py
 
 Purpose:
 --------
-This script wraps MediaPipe's Pose module in a small helper class (PoseDetector).
+This script uses MediaPipe's Pose module in a small helper class (PoseDetector).
 It does three main things:
     1. Detects the body pose in each video frame.
     2. Gives you easy access to landmark coordinates (e.g. hip, knee, ankle).
     3. Calculates the knee angle so we can decide when a squat is "deep enough".
-
-We put this in its own file to:
-    - Keep the code in main.py less cluttered.
-    - Make it easier to re-use pose detection for other exercises later.
 """
 
 import cv2 as cv
@@ -23,7 +19,7 @@ import numpy as np
 #----------------------------------------------------------
 class PoseDetector:
     """
-    Simple wrapper around MediaPipe Pose.
+    MediaPipe Pose
     Provides methods to find the pose in a frame and calculate knee angles.
     """
 
@@ -63,7 +59,7 @@ class PoseDetector:
         Returns
         -------
         frame : np.ndarray
-            The same frame, optionally with landmarks drawn.
+            The same frame, with landmarks drawn.
         """
         # MediaPipe expects RGB images
         img_rgb = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
@@ -92,8 +88,7 @@ class PoseDetector:
         Calculates the angle at the knee (hip-knee-ankle) for the chosen side.
 
         side : 'left' or 'right'
-            We assume the exerciser stands side-on to the camera, so one leg
-            is clearly visible. For this project we expect left side facing the camera.
+        For this project we expect left side facing the camera as instructed at start.
 
         Returns
         -------
@@ -118,7 +113,7 @@ class PoseDetector:
             knee_lm = lm[knee_idx]
             ankle_lm = lm[ankle_idx]
         except IndexError:
-            # Should not normally happen, but we guard against it
+            # Error should not normally happen, but we guard against it
             return None, None
 
         # Convert normalized coordinates to pixel positions
@@ -138,7 +133,8 @@ class PoseDetector:
         v1 = hip - knee
         v2 = ankle - knee
 
-        # Protect against division by zero
+        # We need the vector lengths for the cosine formula; if either vector is zero-length (person perfectly straight or coordinates missing) 
+        # we'd divide by zero later, so we bail out early instead of crashing.
         v1_norm = np.linalg.norm(v1)
         v2_norm = np.linalg.norm(v2)
         if v1_norm == 0 or v2_norm == 0:
@@ -148,6 +144,7 @@ class PoseDetector:
         cos_angle = dot_product / (v1_norm * v2_norm)
 
         # Numerical errors can push cos_angle slightly outside [-1, 1] which would cause arccos to fail therefore we clip it
+        # To keep arccos happy and furthermore prevent NaN results.
         cos_angle = np.clip(cos_angle, -1.0, 1.0)
 
         angle_rad = np.arccos(cos_angle)
